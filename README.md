@@ -18,7 +18,7 @@ The ATP dataset can be found [here](https://github.com/JeffSackmann/tennis_atp)
 
 Potential interesting questions:
 Using data that already exists:
-  - [x] What is the probability of younger players (<25 years old) winning a match under 1,2, and 3 hour(s)?
+  - [x] What is the probability of different age ranges winning a match under 1,2, and 3 hour(s)?
     - [ ] What is this probability in different level tournaments? 250, 500, 1000, 2000?
   - [ ] What is the average number of rank changes within the top 100 ranked players?
   - [ ] What is the probability of the top 10 ranked players to win a tournament?
