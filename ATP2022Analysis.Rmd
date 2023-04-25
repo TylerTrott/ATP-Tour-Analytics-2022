@@ -1,0 +1,283 @@
+---
+title: "Assignment 1"
+author: "Tyler T."
+output:
+  html_document:
+    df_print: paged
+---
+Student Number: 100802975
+
+Assignment Overview:
+
+Decided area and data set: Tennis, ATP Tour 2022 data set.
+
+ATP Tennis Rankings, Results, and Stats
+Link for dataset: https://github.com/JeffSackmann/tennis_atp
+My fork (in case Jeff's one ever disappears): https://github.com/TylerTrott/tennis_atp
+
+Which csv: atp_matches_2022.csv
+
+What is included in this data set:
+
+The ATP Tour 2022 data set covers the ATP 2022 Tour official tournaments. 
+Each tournament has:
+- Tournament Name and ID
+- an, 'n', number of players (Draw Size)
+- Court Surface (Hard, Clay, Grass)
+- Tournament Winner
+- Length of Match
+
+Every Tournament has players who play in the tournament. Every player has the 
+following information:
+- Player Name
+- Player Rank
+- Player Age
+- Player Nationality (IOC - International Olympic Committee)
+- Player Shot Accuracy (Forehand - FH, Backhand - BH, Volley, and Serve)
+- Player match scores per tournament match
+- Number of rank points won/lost during tournament
+
+Requirements
+
+1. Incorporate aspects of data manipulation (e.g., dplyr, tidyr etc)
+
+2. Written words - A discussion that talks about your chosen data set(s), and a 
+discussion of the plots you did, questions they explore, and what they tell you.
+
+3. Include at least 3 graphics: 2 basic including by not limited to: timeseries, 
+bar, scatter, path
+etc, and 1 geographic map. You may have up to 5 graphics in your report.
+
+4. Display a broad range of data visualisation skills to create attractive and 
+professional looking plots (e.g, scales, themes, coordinate systems etc).
+
+5. Your primary dataset should not be built into R (excluding maps).
+
+6. Be communicated in the form of an R Notebook.
+
+Questions I will be exploring with this dataset:
+- What are the probabilties of different age groups winning an ATP tour 
+tournament match under specific time ranges?
+- What is the diversity within the ATP Tour for player nationality?
+  - What nationalities appear more often in winning positions in comparison to 
+    losing ones? (who wins more, by country)
+    
+    
+```{r}
+# Setup workspace
+graphics.off()
+rm(list=ls())
+
+# Yes, I'm actually using these. 
+require(ggplot2)
+library(scales)
+library(tidyverse)
+library(rvest)
+library(magrittr)
+library(ggmap)
+library(stringr)
+library(countrycode)
+library(geonames)
+library("ggplot2")
+theme_set(theme_bw())
+library("sf")
+library("rnaturalearth")
+library("rnaturalearthdata")
+library(cowplot)
+library(googleway)
+library(ggrepel)
+library(ggspatial)
+library(patchwork)
+library("ggdensity")
+library(ggforce)
+library(ggdensity)
+options(geonamesUsername="getafreeusernamefromgeonames.org")
+```
+
+Read the csv file - atp_matches_2022
+```{r}
+atpMatches <- read.csv('./atp_matches_2022.csv')
+atpMatches
+```
+
+Get countries and create a new DF that contains the number of occurences of 
+that country. Both win and lose column
+```{r}
+
+allCountries <- select(atpMatches, winner_ioc, loser_ioc)
+allCountries
+```
+
+Change country abbreviation to full name
+Have to make a column vector for winners/losers
+NOTE: Abbreviations are in IOC (International Olympic Committee)
+```{r}
+#### Winners ####
+winningCountries <- countrycode(sourcevar = allCountries$winner_ioc, "ioc", "country.name")
+
+# Get unique num of occurences for winning countries
+occurencesWinning <- table(winningCountries)
+# Create a DF that hosts unique set of countries, and number of times they occur
+winningCountriesDF <- data.frame(unique(winningCountries), occurencesWinning)
+#winningCountriesDF
+
+#### Losers ####
+losingCountries <-  countrycode(sourcevar = allCountries$loser_ioc, "ioc", "country.name")
+occurencesLosing <- table(losingCountries)
+# Create a DF that hosts unique set of countries, and number of times they occur
+losingCountriesDF <- data.frame(unique(losingCountries), occurencesLosing)
+```
+
+Plot countries on world map for winners
+
+```{r} 
+#### Setup world map for Winners ####
+world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
+
+ggplot(data = world) +
+    geom_sf()
+
+# left join the winning countries df with world$NAME
+world_freq <- left_join(world, winningCountriesDF, by = c("name" = "winningCountries"))
+
+# replace any missing frequency values with zero
+# list does not contain all countries of the world
+if (any(is.na(world_freq$occurencesWinning))) {
+  world_freq$occurencesWinning[is.na(world_freq$occurencesWinning)] <- 0
+}
+
+# Want to plot frequency of athletes from their respective countries
+  ggplot(data = world_freq) +
+    geom_sf(aes(fill = Freq)) +
+    scale_fill_viridis_c(option = "plasma", trans = "sqrt", limits = c(0, max(world_freq$occurencesWinning))) + 
+    ggtitle("World Map of Winning Players", 
+    subtitle = paste0("(Based on number of winning athletes per country)"))
+
+```
+Plot countries on world map for losers
+
+```{r} 
+#### Setup world map for Losers ####
+world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
+
+ggplot(data = world) +
+    geom_sf()
+
+# left join the winning countries df with world$NAME
+world_freq <- left_join(world, losingCountriesDF, by = c("name" = "losingCountries"))
+
+# replace any missing frequency values with zero
+# list does not contain all countries of the world
+if (any(is.na(world_freq$occurencesLosing))) {
+  world_freq$occurencesLosing[is.na(world_freq$occurencesLosing)] <- 0
+}
+
+# Want to plot frequency of athletes from their respective countries
+  ggplot(data = world_freq) +
+    geom_sf(aes(fill = Freq)) +
+    scale_fill_viridis_c(option = "plasma", trans = "sqrt", limits = c(0, max(world_freq$occurencesLosing))) + 
+    ggtitle("World Map of Losing Players", 
+    subtitle = paste0("(Based on number of losing athletes per country)"))
+
+
+```
+
+
+
+
+The following outputs both plots next to each other to see the differences. It 
+is interesting to see that the US has the highest rate of winning and losing. 
+From this, I am willing to assume that the US has a large amount of players
+who were active during the 2022 ATP season. 
+```{r}
+# Winning plot
+world_winning <- ne_countries(scale = "medium", returnclass = "sf")
+world_freq_winning <- left_join(world_winning, winningCountriesDF, by = c("name" = "winningCountries"))
+if (any(is.na(world_freq_winning$Freq))) {
+  world_freq_winning$Freq[is.na(world_freq_winning$Freq)] <- 0
+}
+plot_winning <- ggplot(data = world_freq_winning) +
+  geom_sf(aes(fill = Freq)) +
+  scale_fill_viridis_c(option = "plasma", trans = "sqrt", limits = c(0, max(world_freq_winning$Freq))) + 
+  ggtitle("World Map of Winning Players", subtitle = paste0("(Based on number of winning athletes per country)"))
+
+# Losing plot
+world_losing <- ne_countries(scale = "medium", returnclass = "sf")
+world_freq_losing <- left_join(world_losing, losingCountriesDF, by = c("name" = "losingCountries"))
+if (any(is.na(world_freq_losing$Freq))) {
+  world_freq_losing$Freq[is.na(world_freq_losing$Freq)] <- 0
+}
+plot_losing <- ggplot(data = world_freq_losing) +
+  geom_sf(aes(fill = Freq)) +
+  scale_fill_viridis_c(option = "plasma", trans = "sqrt", limits = c(0, max(world_freq_losing$Freq))) + 
+  ggtitle("World Map of Losing Players", subtitle = paste0("(Based on number of losing athletes per country)"))
+
+# Combine plots using patchwork
+plot_winning + plot_losing + plot_layout(ncol = 2)
+```
+
+
+I'm interested in seeing what the age differential is between the different 
+court surfaces for the tournaments! With the knowledge that I have of tennis
+(I've been playing since I was 7 years old), before creating these diagrams, 
+I suspect that the average age will be higher on Grass, followed by Clay, and
+then finally Hard. The surface matters for age due to the impact of the surface 
+on a player's joints! I am interested in seeing if this stays true, higher age 
+with different surfaces, even for pro tournaments
+
+```{r}
+# To see the difference in age and surface, we have to get those two
+ageSurfaceDF <- select(atpMatches, winner_age, loser_age, surface)
+
+df_long <- tidyr::pivot_longer(ageSurfaceDF, cols = c("winner_age", "loser_age"), names_to = "player", values_to = "age")
+ggplot(df_long, aes(x = surface, y = age, fill = player)) +
+  geom_boxplot() +
+  labs(x = "Surface", y = "Age", fill = "Player") +
+  ggtitle("Winner and Loser Age by Surface Type")
+```
+
+Upon close inspection, it actually looks like the ages are very close to each
+other! I wasn't expecting to see a massive difference in the age groups, but 
+it was shocking to me that the pool was close. What's interesting are the outliers
+for grass. I think my earlier hypothesis was correct that there'd be more older
+players on that surface. This is still really cool. Having to be able to visualize 
+information for something I love like tennis is so exciting! 
+
+I guess for my final part of this assignment, I'll continue playing around with 
+the age category. I'm interested in seeing what the age distribution looks like
+with winners against losers. To keep things spicy, I'm going to throw in the 
+match duration category. How often do older players win in comparison to 
+younger ones?
+
+```{r}
+# want to get ages and match duration 'minutes'
+ageSurfaceDF <- select(atpMatches, winner_age, loser_age, surface, minutes)
+
+# create scatter plot with density plot for winner age vs minutes
+ggplot(ageSurfaceDF, aes(x = winner_age, y = minutes)) +
+  geom_hex() +
+  labs(x = "Winner Age", y = "Minutes") +
+  scale_fill_gradientn(colors = c("white", "blue", "red"), na.value = "transparent") +
+  theme_bw()
+
+
+# create scatter plot with density plot for loser age vs minutes
+ggplot(ageSurfaceDF, aes(x = loser_age, y = minutes)) +
+  geom_hex() +
+  labs(x = "Loser Age", y = "Minutes") +
+  scale_fill_gradientn(colors = c("white", "blue", "red"), na.value = "transparent") +
+  theme_bw()
+```
+
+
+Looking at the above charts (I used HexBin! Isn't it beautiful?), you can see that
+the winners are actually a bit younger than the losers. You can also see that 
+players typically win/lose around the 100 minute mark. Very interesting! Most of 
+these tournaments are best 2 out of 3 sets (sets are first to 6 games) and a set 
+can take upwards of an hour. 
+
+What I can assume from this is that for those who are losing, they must be losing
+pretty badly haha. This was a lot of fun to work with! 
+

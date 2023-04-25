@@ -27,3 +27,12 @@ Using data that already exists:
 Predictions:
   - [ ] Based on which players won tournaments this year, what is the likelihood that these players will win the tournaments again next year?
   - [ ] Based on the number of wins on a specific court, which players are likely to win a tournament (with the same court type) next year?
+
+Update (Winter Semester 2023):
+Have now included R code. 
+
+This code looks into nationalities of players and their success in tournaments. There is a geographical map of the world that lays out the distribution of players who have won and lost matches in tournaments. 
+
+Another thing I have added within this R code is an insight about the age of players and court surface type. It is a box plot that shows the age distribution depending on whether the court surface is clay, grass or hard.
+
+Lastly, the R code includes a graph that displays a relationship between age and the duration of a match. The insight includes both the winner and loser of the match.
